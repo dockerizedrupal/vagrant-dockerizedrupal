@@ -40,7 +40,7 @@ Vagrant.configure("2") do |config|
 
     sudo wget https://raw.githubusercontent.com/dockerizedrupal/vhost/master/docker-compose.yml -O /opt/vhost.yml
 
-    SERVER_NAME="viljaste.fenomen.ee"
+    SERVER_NAME="dev"
 
     sudo sed -i "s/SERVER_NAME=localhost/SERVER_NAME=${SERVER_NAME}/" /opt/vhost.yml
 
