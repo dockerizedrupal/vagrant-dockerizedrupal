@@ -35,7 +35,7 @@ Vagrant.configure("2") do |config|
       sudo apt-get update
       sudo apt-get upgrade -y
 
-      curl -ssl https://get.docker.com/ | sh
+      wget -qO- https://get.docker.com/ | sh
 
       sudo usermod -aG docker vagrant
 
