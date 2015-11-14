@@ -42,6 +42,9 @@ Vagrant.configure("2") do |config|
 
       wget -qO- https://get.docker.com/ | sh
 
+      # make docker start on vagrant-ready upstart event
+      sudo sed -i "s/^start on (local-filesystems and net-device-up IFACE!=lo)/start on vagrant-ready/" /etc/init/docker.conf
+
       sudo usermod -aG docker vagrant
 
       sudo curl -L https://github.com/docker/compose/releases/download/1.5.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose \
@@ -72,4 +75,6 @@ Vagrant.configure("2") do |config|
     SHELL
     s.args = [vm_config['memory'],vm_config['server_name']]
   end
+
+  config.vm.provision :shell, inline: "initctl emit vagrant-ready", run: "always" 
 end
