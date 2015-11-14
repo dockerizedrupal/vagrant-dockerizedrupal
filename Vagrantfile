@@ -1,5 +1,10 @@
 require 'yaml'
 
+required_plugins = %w(vagrant-vbguest)
+required_plugins.each do |plugin|
+  system "vagrant plugin install #{plugin}" unless Vagrant.has_plugin? plugin
+end
+
 vm_config = YAML.load_file("config.yml")
 
 Vagrant.configure("2") do |config|
@@ -8,7 +13,7 @@ Vagrant.configure("2") do |config|
   config.vm.network :forwarded_port, guest: 80, host: 80
   config.vm.network :forwarded_port, guest: 443, host: 443
 
-  config.vm.synced_folder "./", "/var/www", create: true
+  config.vm.synced_folder "./", "/var/www"
   config.vm.synced_folder File.expand_path('system32/drivers/', ENV['windir']), "/winhost"
 
   config.vm.provider "virtualbox" do |v|
