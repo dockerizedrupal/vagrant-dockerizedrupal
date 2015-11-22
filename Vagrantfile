@@ -49,7 +49,7 @@ Vagrant.configure("2") do |config|
       SERVER_NAME="${2}"
 
       swap_resize() {
-        local memory_size=$1
+        local memory_size="${1}"
         local swap_size=$((${memory_size}*2))
 
         swapoff -a
