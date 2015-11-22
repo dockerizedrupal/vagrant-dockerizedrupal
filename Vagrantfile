@@ -14,7 +14,7 @@ VAGRANT_COMMAND = ARGV[0]
 
 Vagrant.configure("2") do |config|
   config.vm.box = "dockerizedrupal/base-ubuntu-trusty"
-  config.vm.box_version = "0.3.0"
+  config.vm.box_version = VERSION
   config.vm.box_check_update = false
 
   config.ssh.insert_key = false
