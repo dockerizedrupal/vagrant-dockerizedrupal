@@ -1,3 +1,4 @@
-server_name: 'dev'
+server_name: 'dockerizedrupal'
 cpus: 2
 memory_size: 2048
+ip_address: 192.18.11.89
