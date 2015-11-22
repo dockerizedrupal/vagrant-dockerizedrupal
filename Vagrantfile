@@ -1,80 +1,102 @@
+VERSION = "0.3.0"
+
 require 'yaml'
 
 required_plugins = %w(vagrant-vbguest)
+
 required_plugins.each do |plugin|
   system "vagrant plugin install #{plugin}" unless Vagrant.has_plugin? plugin
 end
 
 vm_config = YAML.load_file("config.yml")
 
+VAGRANT_COMMAND = ARGV[0]
+
 Vagrant.configure("2") do |config|
-  config.vm.box = "ubuntu/trusty64"
+  config.vm.box = "dockerizedrupal/base-ubuntu-trusty"
+  config.vm.box_version = "0.3.0"
+  config.vm.box_check_update = false
+
+  config.ssh.insert_key = false
+
+  if VAGRANT_COMMAND == "ssh"
+    config.ssh.username = "container"
+  end
 
   config.vm.network :forwarded_port, guest: 80, host: 80
   config.vm.network :forwarded_port, guest: 443, host: 443
 
-  config.vm.synced_folder "./", "/var/www"
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+  config.vm.synced_folder ".", "/var/www"
+
   config.vm.synced_folder File.expand_path('system32/drivers/', ENV['windir']), "/winhost"
 
   config.vm.provider "virtualbox" do |v|
-    v.memory = vm_config['memory']
+    name = "dockerizedrupal-" + VERSION
+
+    name.gsub!(".", "-")
+
+    v.name = name
     v.cpus = vm_config['cpus']
+    v.memory = vm_config['memory_size']
   end
+
+  config.vm.provision "shell", inline: "initctl emit vagrant-ready", run: "always"
 
   config.vm.provision "shell" do |s|
     s.inline = <<-SHELL
-      # size of swapfile in megabytes
-      swapsize=$(($1*2))
+      MEMORY_SIZE="${1}"
+      SERVER_NAME="${2}"
 
-      # does the swap file already exist?
-      grep -q "swapfile" /etc/fstab
+      swap_resize() {
+        local memory_size=$1
+        local swap_size=$((${memory_size}*2))
 
-      # if not then create it
-      if [ $? -ne 0 ]; then
-        fallocate -l ${swapsize}m /swapfile
+        swapoff -a
+
+        fallocate -l "${swap_size}m" /swapfile
+
         chmod 600 /swapfile
+
         mkswap /swapfile
         swapon /swapfile
-      fi
 
-      sudo apt-get update
-      sudo apt-get upgrade -y
+        sysctl vm.swappiness=10
+        sysctl vm.vfs_cache_pressure=50
+      }
 
-      wget -qO- https://get.docker.com/ | sh
+      user_reconfigure() {
+        cp -ar /home/vagrant/.ssh /home/container
 
-      # make docker start on vagrant-ready upstart event
-      sudo sed -i "s/^start on (local-filesystems and net-device-up IFACE!=lo)/start on vagrant-ready/" /etc/init/docker.conf
+        chown -R container.container /home/container/.ssh
+      }
 
-      sudo usermod -aG docker vagrant
+      vhost_run() {
+        local server_name="${1}"
+        local tmp="$(mktemp -d)"
 
-      sudo curl -L https://github.com/docker/compose/releases/download/1.5.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose \
-        && sudo chmod +x /usr/local/bin/docker-compose
+        git clone https://github.com/dockerizedrupal/vhost.git "${tmp}"
 
-      tmp="$(mktemp -d)" \
-        && git clone https://github.com/dockerizedrupal/drupal-compose.git "${tmp}" \
-        && cd "${tmp}" \
-        && git checkout 1.1.5 \
-        && sudo cp "${tmp}/drupal-compose.sh" /usr/local/bin/drupal-compose \
-        && sudo chmod +x /usr/local/bin/drupal-compose \
-        && cd -
+        cd "${tmp}"
 
-      tmp="$(mktemp -d)" \
-        && git clone https://github.com/dockerizedrupal/crush.git "${tmp}" \
-        && cd "${tmp}" \
-        && git checkout 1.1.0 \
-        && sudo cp "${tmp}/crush.sh" /usr/local/bin/crush \
-        && sudo chmod +x /usr/local/bin/crush \
-        && sudo ln -s /usr/local/bin/crush /usr/local/bin/drush \
-        && cd -
-        
-      sudo curl -L https://raw.githubusercontent.com/dockerizedrupal/vhost/master/docker-compose.yml > /opt/vhost.yml
-      sudo sed -i "s/SERVER_NAME=localhost/SERVER_NAME=${2}/" /opt/vhost.yml
-      sudo sed -i "s|/etc/hosts|/winhost/etc/hosts|" /opt/vhost.yml
+        git checkout 1.1.6
 
-      sudo docker-compose -f /opt/vhost.yml up -d
+        cp ./docker-compose.yml /opt/vhost.yml
+
+        sed -i "s/SERVER_NAME=localhost/SERVER_NAME=${server_name}/" /opt/vhost.yml
+        sed -i "s|/etc/hosts|/winhost/etc/hosts|" /opt/vhost.yml
+
+        docker-compose -f /opt/vhost.yml up -d
+      }
+
+      swap_resize "${MEMORY_SIZE}"
+      user_reconfigure
+      vhost_run "${SERVER_NAME}"
     SHELL
-    s.args = [vm_config['memory'],vm_config['server_name']]
-  end
 
-  config.vm.provision :shell, inline: "initctl emit vagrant-ready", run: "always" 
+    s.args = [
+      vm_config['memory_size'],
+      vm_config['server_name'],
+    ]
+  end
 end
