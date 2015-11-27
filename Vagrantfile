@@ -1,5 +1,5 @@
-VERSION = "0.4.3"
-BASE_BOX_VERSION = "0.4.3"
+VERSION = "0.4.4"
+VERSION_BASE_BOX = "0.4.3"
 
 require 'yaml'
 
@@ -13,7 +13,7 @@ vm_config = YAML.load_file("config.yml")
 
 Vagrant.configure("2") do |config|
   config.vm.box = "dockerizedrupal/base-ubuntu-trusty"
-  config.vm.box_version = BASE_BOX_VERSION
+  config.vm.box_version = VERSION_BASE_BOX
   config.vm.box_check_update = false
 
   config.vm.hostname = vm_config["server_name"]
@@ -65,7 +65,6 @@ Vagrant.configure("2") do |config|
 
         sed -i "s/SERVER_NAME=dev/SERVER_NAME=${server_name}/" /opt/vhost.yml
         sed -i "s/HOSTS_IP_ADDRESS=127.0.0.1/HOSTS_IP_ADDRESS=${IP_ADDRESS}/" /opt/vhost.yml
-        sed -i "s|/etc/hosts|/winhost/etc/hosts|" /opt/vhost.yml
 
         docker-compose -f /opt/vhost.yml kill
         docker-compose -f /opt/vhost.yml rm -f
