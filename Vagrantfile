@@ -19,12 +19,6 @@ Vagrant.configure("2") do |config|
 
   config.vm.hostname = vm_config["server_name"]
 
-  config.ssh.insert_key = false
-
-  if VAGRANT_COMMAND == "ssh"
-    config.ssh.username = "container"
-  end
-
   config.vm.network "private_network", ip: vm_config["ip_address"]
 
   config.vm.synced_folder ".", "/vagrant", disabled: true
@@ -67,12 +61,6 @@ Vagrant.configure("2") do |config|
         sysctl vm.vfs_cache_pressure=50
       }
 
-      user_reconfigure() {
-        cp -ar /home/vagrant/.ssh /home/container
-
-        chown -R container.container /home/container/.ssh
-      }
-
       vhost_run() {
         local server_name="${1}"
         local tmp="$(mktemp -d)"
@@ -93,7 +81,6 @@ Vagrant.configure("2") do |config|
       }
 
       swap_resize "${MEMORY_SIZE}"
-      user_reconfigure
       vhost_run "${SERVER_NAME}"
     SHELL
 
