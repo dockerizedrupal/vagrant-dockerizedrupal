@@ -1,4 +1,5 @@
-VERSION = "0.4.2"
+VERSION = "0.4.3"
+BASE_BOX_VERSION = "0.4.3"
 
 require 'yaml'
 
@@ -10,11 +11,9 @@ end
 
 vm_config = YAML.load_file("config.yml")
 
-VAGRANT_COMMAND = ARGV[0]
-
 Vagrant.configure("2") do |config|
   config.vm.box = "dockerizedrupal/base-ubuntu-trusty"
-  config.vm.box_version = VERSION
+  config.vm.box_version = BASE_BOX_VERSION
   config.vm.box_check_update = false
 
   config.vm.hostname = vm_config["server_name"]
@@ -63,20 +62,13 @@ Vagrant.configure("2") do |config|
 
       vhost_run() {
         local server_name="${1}"
-        local tmp="$(mktemp -d)"
 
-        git clone https://github.com/dockerizedrupal/vhost.git "${tmp}"
-
-        cd "${tmp}"
-
-        git checkout 1.1.6
-
-        cp ./docker-compose.yml /opt/vhost.yml
-
-        sed -i "s/SERVER_NAME=localhost/SERVER_NAME=${server_name}/" /opt/vhost.yml
+        sed -i "s/SERVER_NAME=dev/SERVER_NAME=${server_name}/" /opt/vhost.yml
         sed -i "s/HOSTS_IP_ADDRESS=127.0.0.1/HOSTS_IP_ADDRESS=${IP_ADDRESS}/" /opt/vhost.yml
         sed -i "s|/etc/hosts|/winhost/etc/hosts|" /opt/vhost.yml
 
+        docker-compose -f /opt/vhost.yml kill
+        docker-compose -f /opt/vhost.yml rm -f
         docker-compose -f /opt/vhost.yml up -d
       }
 
