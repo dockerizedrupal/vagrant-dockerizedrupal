@@ -1,5 +1,5 @@
-var current_version = '0.4.3';
-var new_version = '0.4.4';
+var current_version = '0.4.4';
+var new_version = '0.4.5';
 
 module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-replace');
