@@ -62,9 +62,10 @@ Vagrant.configure("2") do |config|
 
       vhost_run() {
         local server_name="${1}"
+        local ip_address="${2}"
 
         sed -i "s/SERVER_NAME=dev/SERVER_NAME=${server_name}/" /opt/vhost.yml
-        sed -i "s/HOSTS_IP_ADDRESS=127.0.0.1/HOSTS_IP_ADDRESS=${IP_ADDRESS}/" /opt/vhost.yml
+        sed -i "s/HOSTS_IP_ADDRESS=192.18.11.89/HOSTS_IP_ADDRESS=${ip_address}/" /opt/vhost.yml
 
         docker-compose -f /opt/vhost.yml kill
         docker-compose -f /opt/vhost.yml rm -f
@@ -72,7 +73,7 @@ Vagrant.configure("2") do |config|
       }
 
       swap_resize "${MEMORY_SIZE}"
-      vhost_run "${SERVER_NAME}"
+      vhost_run "${SERVER_NAME}" "${IP_ADDRESS}"
     SHELL
 
     s.args = [
