@@ -1,5 +1,5 @@
-VERSION = "0.4.6"
-VERSION_BASE_BOX = "0.4.5"
+VERSION = "0.4.7"
+VERSION_BASE_BOX = "0.4.6"
 
 require 'yaml'
 
